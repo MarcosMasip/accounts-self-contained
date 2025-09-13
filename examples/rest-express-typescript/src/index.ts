@@ -221,7 +221,21 @@ async function start() {
   if (!server) {
     throw new Error(`Could not bind a port near ${desiredPort}.`);
   }
-  console.log(`Server listening on port ${actualPort}`);
+  const siteUrl = `http://localhost:${actualPort}`;
+  const dbMode = useMemory ? 'In-memory MongoDB' : 'MongoDB (Docker/local)';
+  const uiTarget = process.env.UI_PROXY_TARGET || 'http://localhost:3000';
+  const banner = [
+    '────────────────────────────────────────────────────────',
+    'Accounts.js - REST stack (dev)',
+    `Server:               ${siteUrl}`,
+    `UI (open in browser): ${siteUrl}/`,
+    `REST API (POST):      ${siteUrl}/accounts/*`,
+    `UI dev server:        ${uiTarget} (proxied)`,
+    `Database:             ${dbMode}`,
+    'Tip: Open the UI at the exact URL above. Use POST requests to /accounts/* for the API.',
+    '────────────────────────────────────────────────────────',
+  ].join('\n');
+  console.log('\n' + banner + '\n');
 
   const shutdown = async () => {
     await mongoose.connection.close();

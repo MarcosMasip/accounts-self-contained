@@ -150,7 +150,7 @@ void (async () => {
   });
 
   const yogaRouter = express.Router();
-  // GraphiQL specefic CSP configuration
+  // GraphiQL specific CSP configuration (only applied to /graphql)
   yogaRouter.use(
     helmet({
       contentSecurityPolicy: {
@@ -169,8 +169,8 @@ void (async () => {
   // you can be sure that the global CSP configuration will not be applied to the GraphQL Yoga endpoint
   router.use(yoga.graphqlEndpoint, yogaRouter);
   // Add the global CSP configuration for the rest of your server.
-  router.use(helmet());
   router.use(express.urlencoded({ extended: true }));
+  // Apply global helmet after we mount the UI proxy in dev to avoid CSP blocking dev assets
 
   router.use(infosMiddleware);
   router.get('/verify-email/:token', verifyEmail(app.injector));
@@ -180,11 +180,14 @@ void (async () => {
   const expressApp = express();
   expressApp.use(router);
 
+  // Resolve UI dev server target (for proxy + logs)
+  const uiTarget = process.env.UI_PROXY_TARGET || 'http://localhost:3000';
+
   // In development, proxy the React GraphQL client so users can visit only one port (4000)
   if (process.env.NODE_ENV !== 'production') {
-    const target = process.env.UI_PROXY_TARGET || 'http://localhost:3000';
     const graphqlPath = yoga.graphqlEndpoint || '/graphql';
-    const uiProxy = createProxyMiddleware({ target, changeOrigin: true, ws: true });
+    const uiProxy = createProxyMiddleware({ target: uiTarget, changeOrigin: true, ws: true });
+    // Mount the UI proxy BEFORE global helmet so CSP doesn't block Vite assets
     expressApp.use((req, res, next) => {
       const pathname = req.path || req.url;
       if (req.method !== 'GET') return next();
@@ -194,11 +197,40 @@ void (async () => {
       if (pathname.startsWith('/resetPassword')) return next();
       return uiProxy(req, res, next);
     });
+    // Do NOT apply global helmet here; it would add CSP headers blocking Vite dev assets.
+  } else {
+    // Production: enable global helmet and provide a friendly root route
+    router.use(helmet());
+    expressApp.get('/', (_req, res) => {
+      res
+        .type('text/plain')
+        .send(
+          'Accounts GraphQL server is running. GraphQL endpoint is at /graphql.\n' +
+            'In development, use yarn dev to proxy a React UI here.'
+        );
+    });
   }
 
   // Start the server and you're done!
   const server = expressApp.listen(port, () => {
-    console.info(`Server is running on ${siteUrl}/graphql`);
+    // Pretty banner to make ports and routes obvious in dev
+    const dbMode =
+      process.env.MONGO_INMEMORY === '1' || process.env.MONGO_INMEMORY === 'true'
+        ? 'In-memory MongoDB'
+        : 'MongoDB (Docker/local)';
+    const lines = [
+      '────────────────────────────────────────────────────────',
+      'Accounts.js - GraphQL stack (dev)',
+      `Server:                 ${siteUrl}`,
+      `UI (open in browser):   ${siteUrl}/`,
+      `GraphiQL (open in browser): ${siteUrl}/graphql`,
+      `GraphQL API endpoint:   ${siteUrl}/graphql`,
+      `UI dev server:          ${uiTarget} (proxied)`,
+      `Database:               ${dbMode}`,
+      'Tip: Open the UI at the exact URL above. Use /graphql for GraphiQL and API requests.',
+      '────────────────────────────────────────────────────────',
+    ];
+    console.info('\n' + lines.join('\n') + '\n');
   });
 
   // Graceful shutdown
