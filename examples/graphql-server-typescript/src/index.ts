@@ -146,7 +146,8 @@ void (async () => {
   // Create a Yoga instance with a GraphQL schema.
   const yoga = createYoga({
     plugins: [useGraphQLModules(app)],
-    context: (ctx) => context(ctx, { createOperationController }),
+    // Provide the app injector in context so resolvers can use ctx.injector
+    context: (ctx) => context(ctx, { createOperationController, ctx: { injector } }),
   });
 
   const yogaRouter = express.Router();

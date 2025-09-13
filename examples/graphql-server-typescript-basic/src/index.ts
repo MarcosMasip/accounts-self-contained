@@ -127,7 +127,7 @@ void (async () => {
   const handler = createHandler<Pick<IContext, keyof IContext>>({
     schema: app.schema,
     execute: app.createExecution(),
-    context: (request) => context({ request }, { createOperationController }),
+    context: (request) => context({ request }, { createOperationController, ctx: { injector } }),
   });
 
   injector.get(AccountsServer).on(ServerHooks.ValidateLogin, ({ user }) => {

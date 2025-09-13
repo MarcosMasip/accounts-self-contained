@@ -53,7 +53,7 @@ void (async () => {
         // ctx.userId will be set if user is logged in
         if (ctx.userId) {
           // We could have simply returned ctx.user instead
-          return ctx.injector.get(AccountsServer).findUserById(ctx.userId);
+          return injector.get(AccountsServer).findUserById(ctx.userId);
         }
         return null;
       },
@@ -114,6 +114,7 @@ void (async () => {
     context: (ctx) =>
       context(ctx, {
         createOperationController,
+        ctx: { injector },
         // Provide EntityManager either via context or via Providers
         // ctx: { em: orm.em.fork() }
       }),

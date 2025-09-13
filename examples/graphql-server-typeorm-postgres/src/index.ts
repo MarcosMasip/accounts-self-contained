@@ -86,12 +86,12 @@ export const createAccounts = async () => {
     schemaBuilder: buildSchema({ typeDefs, resolvers }),
   });
 
-  const { createOperationController } = app;
+  const { injector, createOperationController } = app;
 
   // Create a Yoga instance with a GraphQL schema.
   const yoga = createYoga({
     plugins: [useGraphQLModules(app)],
-    context: (ctx) => context(ctx, { createOperationController }),
+    context: (ctx) => context(ctx, { createOperationController, ctx: { injector } }),
   });
 
   // Pass it into a server to hook into request handlers.

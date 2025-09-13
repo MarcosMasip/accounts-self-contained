@@ -145,7 +145,8 @@ void (async () => {
   const port = Number(process.env.PORT) || 4000;
   const { url } = await startStandaloneServer(server, {
     listen: { port },
-    context: (ctx) => context(ctx, { createOperationController }),
+    // Provide the app injector so resolvers can use ctx.injector
+    context: (ctx) => context(ctx, { createOperationController, ctx: { injector } }),
   });
 
   console.log(`🚀  Server ready at ${url}`);
