@@ -3,7 +3,7 @@ import { RouteComponentProps, Link } from 'react-router-dom';
 import { FormControl, InputLabel, Input, Button, Typography } from '@mui/material';
 import { makeStyles } from '@mui/styles';
 
-import { accountsPassword } from './utils/accounts';
+import { accountsPassword, apolloClient } from './utils/accounts';
 import FormError from './components/FormError';
 
 const useStyles = makeStyles({
@@ -40,6 +40,10 @@ const Login = ({ history }: RouteComponentProps) => {
         password,
         code,
       });
+      // Ensure queries re-execute with the fresh Authorization header
+      try {
+        await apolloClient.resetStore();
+      } catch {}
       history.push('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');

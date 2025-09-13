@@ -246,6 +246,71 @@ Intentional behavior:
 
 ---
 
+## GraphQL quick walkthrough (try it now)
+
+Once the GraphQL stack is running (pick GraphQL in `yarn dev` or run `yarn dev:gql`), open GraphiQL:
+
+- http://localhost:4000/graphql
+
+Run these in order. Paste each in the editor and execute; keep the Headers tab open for step 3.
+
+1. Create a user
+
+```
+mutation CreateUser {
+  createUser(
+    user: { email: "john.does@john.com", password: "1234567", firstName: "John", lastName: "Doe" }
+  )
+}
+```
+
+2. (Optional) Verify user email
+
+If your flow requires email verification and you have a token/userId from a real email, run:
+
+```
+mutation Verify($token: String!, $userId: ID!) {
+  verifyEmail(token: $token, userId: $userId)
+}
+```
+
+Most example stacks allow logging in without email verification; you can skip this step.
+
+3. Login and copy the accessToken
+
+```
+mutation Login {
+  authenticate(
+    serviceName: "password"
+    params: { password: "1234567", user: { email: "john.does@john.com" } }
+  ) {
+    tokens { accessToken }
+  }
+}
+```
+
+In GraphiQL, click Headers and set:
+
+```
+{
+  "Authorization": "Bearer <paste accessToken here>"
+}
+```
+
+4. Query protected and public fields
+
+```
+query MeAndFields {
+  me { id emails { address verified } }
+  privateField
+  publicField
+}
+```
+
+You should see `me` populated, `privateField` accessible (requires the token), and `publicField` always available.
+
+---
+
 ## Features
 
 - Create and manage users

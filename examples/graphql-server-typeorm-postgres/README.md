@@ -1,40 +1,36 @@
 # typeorm-server-typescript
 
-This example demonstrate how to use [accounts-js](https://github.com/accounts-js/accounts) with PostgreSQL thanks to the amazing [@accounts/typeorm](https://www.npmjs.com/package/@accounts/typeorm) plugin built by [@birkir](https://github.com/birkir/)for his awesome project: (https://github.com/birkir/prime)[PrimeCMS].
+This example demonstrates how to use [accounts-js](https://github.com/accounts-js/accounts) with PostgreSQL via the [@accounts/typeorm](https://www.npmjs.com/package/@accounts/typeorm) adapter.
 
-## Setup example
+## Setup
 
-In order to be able to run this example on your machine you first need to do the following steps:
+From the repository root:
 
-- Clone the repository `git clone git@github.com:accounts-js/accounts.git`
-- Install project dependencies: `yarn install`
-- Compile the packages `yarn run compile`
-- Go to the example folder `cd examples/graphql-server-typeorm-postgres`
+- Install deps and compile: `yarn install && yarn install --immutable && yarn compile`
 
-## Prerequisites
+## Prerequisites (PostgreSQL)
 
-You will need a PostgreSQL server to run this package. If you don't have a PostgreSQL server running already, and you have Docker & Docker Compose, you can do
+You need a PostgreSQL instance. Easiest is via Docker:
 
 ```bash
-docker-compose up -d
+yarn dev:dbs   # starts postgres (and other DBs) via docker compose
 ```
 
-to start a new one.
+Alternatively, edit `.env` in this folder to match your local Postgres and ensure it’s running. The server reads `DATABASE_URL` and `ACCOUNTS_SECRET` from `.env`.
 
-If you have postgres already installed on your system, you can just edit the .env file and use your current postgres data instead of the supplied Docker image.
-Alternatively you can simply prepend the `DATABASE_URL` and `ACCOUNTS_SECRET` environmental variables to your `yarn run start` command.
+## Run the server
 
-## Getting Started
-
-Start the app.
-
-Visit <http://localhost:4000/>
+From the repository root:
 
 ```bash
-yarn run start
+yarn workspace @examples/graphql-typeorm-typescript start
 ```
 
--> [Start the client side](../react-graphql-typescript).
+Then open:
+
+- GraphQL endpoint/GraphiQL: http://localhost:4000/graphql
+
+Tip: If you also want a React UI, use the standard GraphQL stack instead (`yarn dev:gql`), which starts the Mongo-based example with the UI proxied at http://localhost:4000.
 
 ```graphql
 mutation CreateUser {

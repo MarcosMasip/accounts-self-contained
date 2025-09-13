@@ -1,41 +1,36 @@
 # mikro-orm-server-typescript
 
-This example demonstrate how to use [accounts-js](https://github.com/accounts-js/accounts) with PostgreSQL thanks to the [@accounts/mikro-orm](https://www.npmjs.com/package/@accounts/mikro-orm) plugin built by (https://github.com/darkbasic/)[@darkbasic].
+This example demonstrates how to use [accounts-js](https://github.com/accounts-js/accounts) with PostgreSQL via the [@accounts/mikro-orm](https://www.npmjs.com/package/@accounts/mikro-orm) adapter.
 
-## Setup example
+## Setup
 
-In order to be able to run this example on your machine you first need to do the following steps:
+From the repository root:
 
-- Clone the repository `git clone git@github.com:accounts-js/accounts.git`
-- Install project dependencies: `yarn`
-- Link together all the packages: `yarn setup`
-- Compile the packages `yarn compile`
-- Go to the example folder `cd examples/graphql-server-mikro-orm-postgres`
+- Install deps and compile: `yarn install && yarn install --immutable && yarn compile`
 
-## Prerequisites
+## Prerequisites (PostgreSQL)
 
-If you're on a mac, you will probably already have postgres installed as a brew service.
-just edit the .env file and use your current postgres data
-
-You will need a PostgreSQL server to run this package. If you don't have a PostgreSQL server running already, and you have Docker & Docker Compose, you can do
+Start Postgres via Docker:
 
 ```bash
-docker-compose up -d
+yarn dev:dbs   # starts postgres (and other DBs) via docker compose
 ```
 
-to start a new one.
+or configure `.env` in this folder to point to your local Postgres.
 
-## Getting Started
+## Run the server
 
-Start the app.
-
-Visit <http://localhost:4000/>
+From the repository root:
 
 ```bash
-yarn start
+yarn workspace @examples/graphql-mikro-orm-typescript start
 ```
 
--> [Start the client side](../react-graphql-typescript).
+Then open:
+
+- GraphQL endpoint/GraphiQL: http://localhost:4000/graphql
+
+Tip: If you also want a React UI, the standard GraphQL stack (`yarn dev:gql`) starts the Mongo-based example with the UI proxied at http://localhost:4000.
 
 ```graphql
 mutation CreateUser {

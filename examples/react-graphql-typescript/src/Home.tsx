@@ -21,7 +21,7 @@ const GET_USER_QUERY = gql`
 `;
 
 const Home = ({ history }: RouteComponentProps) => {
-  const { loading, error, data } = useQuery(GET_USER_QUERY);
+  const { loading, error, data } = useQuery(GET_USER_QUERY, { fetchPolicy: 'network-only' });
 
   const onResendEmail = async () => {
     await accountsGraphQL.sendVerificationEmail(data.getUser.emails[0].address);
