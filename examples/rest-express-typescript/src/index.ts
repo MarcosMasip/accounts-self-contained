@@ -64,6 +64,51 @@ async function start() {
   expressApp.use(bodyParser.urlencoded({ extended: true }));
   expressApp.use(cors());
 
+  // Friendly GET for /accounts so direct browser visits don't show "Cannot GET /accounts".
+  // Real REST operations are still under /accounts/* (mostly POST); this handler is just informational.
+  expressApp.get('/accounts', (req, res) => {
+    const host = (req.headers.host as string) || 'localhost:4000';
+    res
+      .type('text/plain')
+      .send(
+        'Accounts REST API is running.\n' +
+          'This route is informational. Common endpoints (POST):\n' +
+          '  - /accounts/login\n' +
+          '  - /accounts/logout\n' +
+          '  - /accounts/refreshTokens\n' +
+          '  - /accounts/createUser\n' +
+          '  - /accounts/sendResetPasswordEmail\n' +
+          `Visit the app at http://${host}/ (the UI is proxied in development).\n`
+      );
+  });
+
+  // Helpful GET handler for any /accounts/* path to explain that these endpoints expect POST.
+  expressApp.get('/accounts/*', (req, res) => {
+    const host = (req.headers.host as string) || 'localhost:4000';
+    const url = `http://${host}${req.path}`;
+    const path = req.path;
+    let exampleBody = '';
+    if (path.endsWith('/login')) {
+      exampleBody = `-H 'Content-Type: application/json' \\\n  -d '{"user":{"email":"john@example.com"},"password":"1234567"}'`;
+    } else if (path.endsWith('/logout')) {
+      exampleBody = `-H 'Authorization: Bearer <accessToken>'`;
+    } else if (path.endsWith('/refreshTokens')) {
+      exampleBody = `-H 'Content-Type: application/json' \\\n  -d '{"accessToken":"<accessToken>","refreshToken":"<refreshToken>"}'`;
+    } else if (path.endsWith('/createUser')) {
+      exampleBody = `-H 'Content-Type: application/json' \\\n  -d '{"user":{"email":"john@example.com","password":"1234567","firstName":"John","lastName":"Doe"}}'`;
+    } else if (path.endsWith('/sendResetPasswordEmail')) {
+      exampleBody = `-H 'Content-Type: application/json' \\\n  -d '{"email":"john@example.com"}'`;
+    }
+    res
+      .type('text/plain')
+      .send(
+        `This endpoint expects a POST request, not GET.\n\n` +
+          `Try from a terminal:\n` +
+          `  curl -s -X POST ${url} ${exampleBody}\n\n` +
+          `Note: Use the app at http://${host}/ for an in-browser experience.\n`
+      );
+  });
+
   interface UserDoc extends mongoose.Document {
     firstName: string;
     lastName: string;
