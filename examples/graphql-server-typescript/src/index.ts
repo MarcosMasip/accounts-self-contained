@@ -16,16 +16,27 @@ import {
 import { AccountsServer, AuthenticationServicesToken, ServerHooks } from '@accounts/server';
 import gql from 'graphql-tag';
 import mongoose from 'mongoose';
+import { MongoMemoryServer } from 'mongodb-memory-server';
 import { createApplication } from 'graphql-modules';
 import { createAccountsMongoModule } from '@accounts/module-mongo';
 import { createYoga } from 'graphql-yoga';
 import { useGraphQLModules } from '@envelop/graphql-modules';
 import express from 'express';
 import helmet from 'helmet';
+import { createProxyMiddleware } from 'http-proxy-middleware';
 
 void (async () => {
-  // Create database connection
-  await mongoose.connect('mongodb://localhost:27017/accounts-js-graphql-example');
+  // Create database connection (supports in-memory MongoDB)
+  const useInMemory = process.env.MONGO_INMEMORY === '1' || process.env.MONGO_INMEMORY === 'true';
+  let mongod: MongoMemoryServer | undefined;
+  if (useInMemory) {
+    mongod = await MongoMemoryServer.create();
+    const uri = mongod.getUri();
+    await mongoose.connect(uri);
+    console.log(`Using in-memory MongoDB at ${uri}`);
+  } else {
+    await mongoose.connect('mongodb://localhost:27017/accounts-js-graphql-example');
+  }
   const dbConn = mongoose.connection;
 
   const typeDefs = gql`
@@ -86,7 +97,7 @@ void (async () => {
     },
   };
 
-  const port = 4000;
+  const port = Number(process.env.PORT) || 4000;
   const siteUrl = `http://localhost:${port}`;
   const app = createApplication({
     modules: [
@@ -169,8 +180,42 @@ void (async () => {
   const expressApp = express();
   expressApp.use(router);
 
+  // In development, proxy the React GraphQL client so users can visit only one port (4000)
+  if (process.env.NODE_ENV !== 'production') {
+    const target = process.env.UI_PROXY_TARGET || 'http://localhost:3000';
+    const graphqlPath = yoga.graphqlEndpoint || '/graphql';
+    const uiProxy = createProxyMiddleware({ target, changeOrigin: true, ws: true });
+    expressApp.use((req, res, next) => {
+      const pathname = req.path || req.url;
+      if (req.method !== 'GET') return next();
+      if (pathname.startsWith(graphqlPath)) return next();
+      if (pathname.startsWith('/verify-email')) return next();
+      if (pathname.startsWith('/reset-password')) return next();
+      if (pathname.startsWith('/resetPassword')) return next();
+      return uiProxy(req, res, next);
+    });
+  }
+
   // Start the server and you're done!
-  expressApp.listen(port, () => {
+  const server = expressApp.listen(port, () => {
     console.info(`Server is running on ${siteUrl}/graphql`);
   });
+
+  // Graceful shutdown
+  const shutdown = async () => {
+    console.info('Shutting down...');
+    server.close(async () => {
+      try {
+        await mongoose.connection.close();
+      } catch {}
+      try {
+        if (mongod) {
+          await mongod.stop();
+        }
+      } catch {}
+      process.exit(0);
+    });
+  };
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
 })();

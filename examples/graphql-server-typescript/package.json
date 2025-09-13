@@ -5,7 +5,7 @@
   "main": "lib/index.js",
   "license": "MIT",
   "scripts": {
-    "start": "NODE_ENV=development yarn run -T nodemon -w src -x ts-node src/index.ts",
+    "start": "cross-env NODE_ENV=development yarn run -T nodemon -w src -x ts-node src/index.ts",
     "build": "yarn run -T tsc",
     "test": "yarn run build"
   },
@@ -19,12 +19,15 @@
     "@envelop/graphql-modules": "6.0.0",
     "@graphql-tools/merge": "9.0.3",
     "@graphql-tools/schema": "10.0.3",
+    "cross-env": "7.0.3",
     "express": "^4.18.3",
     "graphql": "16.8.1",
     "graphql-modules": "3.0.0-alpha-20231106133212-0b04b56e",
     "graphql-tag": "2.12.6",
     "graphql-yoga": "5.1.1",
     "helmet": "^7.1.0",
+    "http-proxy-middleware": "3.0.0",
+    "mongodb-memory-server": "9.1.8",
     "mongoose": "8.2.1",
     "tslib": "2.6.2"
   },

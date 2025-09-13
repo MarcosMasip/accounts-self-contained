@@ -5,7 +5,7 @@
   "main": "lib/index.js",
   "license": "MIT",
   "scripts": {
-    "start": "NODE_ENV=development yarn run -T nodemon -w src -x ts-node src/index.ts",
+    "start": "cross-env NODE_ENV=development yarn run -T nodemon -w src -x ts-node src/index.ts",
     "build": "yarn run -T tsc",
     "test": "yarn run build"
   },
@@ -19,7 +19,10 @@
     "@accounts/server": "^0.33.1",
     "body-parser": "1.20.2",
     "cors": "2.8.5",
+    "cross-env": "7.0.3",
     "express": "4.18.3",
+    "http-proxy-middleware": "3.0.0",
+    "mongodb-memory-server": "9.1.8",
     "mongoose": "8.2.1",
     "tslib": "2.6.2"
   }

@@ -37,6 +37,55 @@ The `@accounts` suite of packages aims to provide all the tools you need to buil
 
 🙋‍♀️ A bit lost? Here are some [examples](https://github.com/accounts-js/accounts/tree/master/examples) where you can see working clients and severs with react, GraphQL or Rest.
 
+## Quickstart (fully local, no external APIs)
+
+Prerequisites: Node 16+, Yarn 4, Docker Desktop running.
+
+1. Install deps and compile all workspaces
+
+- First install (updates lockfile if needed): `yarn install`
+- Then enforce immutable installs: `yarn install --immutable`
+- Compile once: `yarn compile`
+
+2. Start the app (Docker preferred, auto-fallback to no-Docker)
+
+- Single command, interactive picker: `yarn dev` → choose REST or GraphQL.
+- Or skip the prompt: `yarn dev` (REST) / `yarn dev:gql` (GraphQL) / `yarn dev:rest`.
+- You can also set `STACK=gql yarn dev` to preselect GraphQL.
+- The launcher attempts to start Docker containers when available; if Docker isn't available or fails, it falls back to in-memory MongoDB automatically.
+
+3. Seed a demo user into Mongo (optional)
+
+- `yarn seed:mongo`
+
+4. What gets started
+
+- REST stack (from picker or `yarn dev:rest`):
+  - REST API server with in-memory or Docker Mongo.
+  - React UI dev server.
+  - Single-port browsing: visit http://localhost:4000 (or the port logged by the server if 4000 is busy). The UI is proxied behind the same origin; the API is under `/accounts`.
+- GraphQL stack (from picker or `STACK=gql yarn dev` or `yarn dev:gql`):
+  - GraphQL Yoga server with in-memory or Docker Mongo.
+  - React GraphQL UI dev server.
+  - Single-port browsing: visit http://localhost:4000 (GraphiQL at `/graphql`). The React UI is proxied behind the same origin.
+
+5. Run a matching React client (optional)
+
+- REST client: `yarn dev:react:rest`
+- GraphQL client: `yarn dev:react:graphql`
+
+6. Smoke test the whole stack
+   - `yarn smoke`
+   - If Docker is running, containers are used. If not, the test automatically switches to in-memory Mongo. It runs end-to-end flows (create user, login, verify email, reset password) against REST and GraphQL, then tears down containers when used.
+
+### Notes on Docker vs no-Docker
+
+- The dev launcher prefers Docker if available to start Mongo/Postgres/Redis (as defined in `docker-compose.yml`).
+- If Docker isn't installed or running, it automatically runs servers with in-memory Mongo so you can still interact with all features locally.
+- You can still run seed/smoke explicitly; they also auto-detect Docker and fall back to in-memory.
+
+Troubleshooting (macOS): Ensure Docker Desktop is running. If ports 27017/5432/6379 are in use, stop other services or edit `docker-compose.yml`.
+
 ## Features
 
 - Create and manage users

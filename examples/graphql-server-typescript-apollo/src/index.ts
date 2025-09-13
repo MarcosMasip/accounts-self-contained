@@ -10,6 +10,7 @@ import { AccountsPassword } from '@accounts/password';
 import { AccountsServer, AuthenticationServicesToken, ServerHooks } from '@accounts/server';
 import gql from 'graphql-tag';
 import mongoose from 'mongoose';
+import { MongoMemoryServer } from 'mongodb-memory-server';
 import { createApplication } from 'graphql-modules';
 import { createAccountsMongoModule } from '@accounts/module-mongo';
 import { ApolloServer } from '@apollo/server';
@@ -18,8 +19,17 @@ import { ApolloServerPluginLandingPageDisabled } from '@apollo/server/plugin/dis
 import { ApolloServerPluginLandingPageGraphQLPlayground } from '@apollo/server-plugin-landing-page-graphql-playground';
 
 void (async () => {
-  // Create database connection
-  await mongoose.connect('mongodb://localhost:27017/accounts-js-graphql-example');
+  // Create database connection (supports in-memory MongoDB)
+  const useInMemory = process.env.MONGO_INMEMORY === '1' || process.env.MONGO_INMEMORY === 'true';
+  let mongod: MongoMemoryServer | undefined;
+  if (useInMemory) {
+    mongod = await MongoMemoryServer.create();
+    const uri = mongod.getUri();
+    await mongoose.connect(uri);
+    console.log(`Using in-memory MongoDB at ${uri}`);
+  } else {
+    await mongoose.connect('mongodb://localhost:27017/accounts-js-graphql-example');
+  }
   const dbConn = mongoose.connection;
 
   const typeDefs = gql`
@@ -132,10 +142,28 @@ void (async () => {
     ],
   });
 
+  const port = Number(process.env.PORT) || 4000;
   const { url } = await startStandaloneServer(server, {
-    listen: { port: 4000 },
+    listen: { port },
     context: (ctx) => context(ctx, { createOperationController }),
   });
 
   console.log(`🚀  Server ready at ${url}`);
+
+  // Graceful shutdown
+  const shutdown = async () => {
+    console.info('Shutting down...');
+    await server.stop();
+    try {
+      await mongoose.connection.close();
+    } catch {}
+    try {
+      if (mongod) {
+        await mongod.stop();
+      }
+    } catch {}
+    process.exit(0);
+  };
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
 })();

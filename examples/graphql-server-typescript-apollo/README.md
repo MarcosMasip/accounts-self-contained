@@ -1,37 +1,22 @@
-# graphql-server-typescript
+# graphql-server-typescript-apollo
 
 This example demonstrate how to use [accounts-js](https://github.com/accounts-js/accounts).
 
 ## Setup example
 
-In order to be able to run this example on your machine you first need to do the following steps:
+From the repository root:
 
-- Clone the repository `git clone git@github.com:accounts-js/accounts.git`
-- Install project dependencies: `yarn install`
-- Compile the packages `yarn run compile`
-- Go to the example folder `cd examples/graphql-server-typescript`
+- Install dependencies: `yarn install && yarn install --immutable`
+- Compile once: `yarn compile`
+- Start the GraphQL stack (Apollo server + React UI): `yarn dev:gql`
 
 ## Prerequisites
 
-You will need a MongoDB server to run this server. If you don't have a MongoDB server running already, and you have Docker & Docker Compose, you can do
-
-```bash
-docker-compose up -d
-```
-
-to start a new one.
+None. The unified dev command will attempt to start MongoDB via Docker; if Docker isn't available, the server falls back to mongodb-memory-server automatically.
 
 ## Getting Started
 
-Start the app.
-
-Visit http://localhost:4000/
-
-```bash
-yarn run start
-```
-
--> [Start the client side](../react-graphql-typescript).
+When started from the root (`yarn dev:gql`), visit http://localhost:4000/ for the React UI. The GraphQL endpoint is at http://localhost:4000/graphql. The server proxies the UI so you only need one port.
 
 ```graphql
 mutation CreateUser {

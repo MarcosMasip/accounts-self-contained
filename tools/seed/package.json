@@ -1,0 +1,27 @@
+{
+  "name": "@tools/seed",
+  "private": true,
+  "version": "0.0.0",
+  "main": "lib/index.js",
+  "typings": "lib/index.d.ts",
+  "scripts": {
+    "clean": "rimraf lib",
+    "compile": "tsc -p tsconfig.json",
+    "start": "ts-node src/mongo.ts",
+    "seed:mongo": "ts-node src/mongo.ts"
+  },
+  "dependencies": {
+    "@accounts/mongo": "^0.34.1",
+    "@accounts/password": "^0.32.2",
+    "@accounts/server": "^0.33.1",
+    "@accounts/types": "^0.33.2",
+    "mongodb-memory-server": "9.1.8",
+    "mongoose": "8.2.1",
+    "reflect-metadata": "0.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "20.11.25",
+    "ts-node": "10.9.2",
+    "typescript": "~5.3.3"
+  }
+}
