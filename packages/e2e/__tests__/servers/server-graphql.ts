@@ -29,13 +29,13 @@ export class ServerGraphqlTest implements ServerTestInterface {
   get accountsDatabase() {
     return this.accountsApp.injector.get(DatabaseInterfaceUserToken) as DatabaseInterface;
   }
-  public port = 5000;
+  public port = 0; // use ephemeral free port to avoid conflicts
 
   public accountsDatabaseModule: Module;
   public accountsApp: Application;
 
-  public accountsClient: AccountsClient;
-  public accountsClientPassword: AccountsClientPassword;
+  public accountsClient!: AccountsClient;
+  public accountsClientPassword!: AccountsClientPassword;
 
   public emails: any[];
 
@@ -93,26 +93,33 @@ export class ServerGraphqlTest implements ServerTestInterface {
       gateway: this.accountsApp.createApolloGateway(),
     });
 
-    const apolloClient = new ApolloClient({
-      uri: `http://localhost:${this.port}`,
-      cache: new InMemoryCache(),
-    });
-
-    const accountsClientGraphQL = new AccountsGraphQLClient({
-      graphQLClient: apolloClient,
-    });
-    this.accountsClient = new AccountsClient({}, accountsClientGraphQL);
-    this.accountsClientPassword = new AccountsClientPassword(this.accountsClient);
     this.emails = [];
   }
 
   public async start() {
     await new Promise((resolve) => setTimeout(resolve, 3000));
-    await startStandaloneServer(this.apolloServer, {
+    const { url } = await startStandaloneServer(this.apolloServer, {
       listen: { port: this.port },
       context: (ctx) =>
         context(ctx, { createOperationController: this.accountsApp.createOperationController }),
     });
+    // Derive the actual port from the started server URL
+    try {
+      const u = new URL(url);
+      this.port = Number(u.port || (u.protocol === 'https:' ? 443 : 80));
+    } catch {
+      // fallback: if parsing fails, assume 5000
+      if (!this.port || this.port === 0) this.port = 5000;
+    }
+
+    // Initialize client after server is up with the real URL
+    const apolloClient = new ApolloClient({
+      uri: url,
+      cache: new InMemoryCache(),
+    });
+    const accountsClientGraphQL = new AccountsGraphQLClient({ graphQLClient: apolloClient });
+    this.accountsClient = new AccountsClient({}, accountsClientGraphQL);
+    this.accountsClientPassword = new AccountsClientPassword(this.accountsClient);
     await this.databaseTest.start();
   }
 

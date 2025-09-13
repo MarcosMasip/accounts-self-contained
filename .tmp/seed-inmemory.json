@@ -1,0 +1,7 @@
+{
+  "mode": "in-memory",
+  "uri": "mongodb://127.0.0.1:13892/",
+  "email": "demo@example.com",
+  "password": "changeme",
+  "at": "2025-09-13T23:33:30.230Z"
+}

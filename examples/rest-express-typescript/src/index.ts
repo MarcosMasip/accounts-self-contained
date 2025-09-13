@@ -12,6 +12,9 @@ import { createApplication } from 'graphql-modules';
 import { createAccountsCoreModule } from '@accounts/module-core';
 import { createAccountsPasswordModule } from '@accounts/module-password';
 import { createAccountsMongoModule } from '@accounts/module-mongo';
+import { Mongo } from '@accounts/mongo';
+import fs from 'node:fs';
+import path from 'node:path';
 
 async function start() {
   const useMemory = process.env.MONGO_INMEMORY === '1';
@@ -25,6 +28,54 @@ async function start() {
     );
   }
   const dbConn = mongoose.connection;
+
+  // When using in-memory DB, auto-seed a demo user so login works out of the box.
+  // This mirrors tools/seed but reuses the same db connection to avoid a separate in-memory instance.
+  if (useMemory && (process.env.ACCOUNTS_AUTOSEED === '1' || shouldMirrorSeedMarker())) {
+    try {
+      const accountsDb = new Mongo(dbConn as any);
+      const { email, password } = readSeedMarker() || {
+        email: process.env.DEMO_EMAIL || 'demo@example.com',
+        password: process.env.DEMO_PASSWORD || 'changeme',
+      };
+      const existing = await accountsDb.findUserByEmail?.(email);
+      if (!existing) {
+        const tempPassword = new AccountsPassword();
+        const tempServer = new (AccountsServer as any)(
+          { tokenSecret: 'dev-auto-seed' },
+          { password: tempPassword },
+          accountsDb
+        );
+        await tempPassword.createUser({
+          email,
+          password,
+          profile: { firstName: 'Demo', lastName: 'User' },
+        } as any);
+        console.log(`['dev:auto'] Seeded demo user for in-memory DB (${email} / ${password})`);
+      }
+    } catch (e) {
+      console.warn('[dev:auto] Demo user auto-seed skipped:', (e as Error)?.message || e);
+    }
+  }
+
+  function seedMarkerPath() {
+    const repoRoot = path.resolve(__dirname, '../../..');
+    return path.join(repoRoot, '.tmp', 'seed-inmemory.json');
+  }
+  function readSeedMarker(): { email: string; password: string } | null {
+    try {
+      const file = seedMarkerPath();
+      if (!fs.existsSync(file)) return null;
+      const data = JSON.parse(fs.readFileSync(file, 'utf-8'));
+      return { email: data.email, password: data.password };
+    } catch {
+      return null;
+    }
+  }
+  function shouldMirrorSeedMarker(): boolean {
+    // Mirror only if a prior in-memory seed marker exists (from tools/seed) and user didn't set ACCOUNTS_AUTOSEED explicitly
+    return !!readSeedMarker();
+  }
 
   const app = createApplication({
     modules: [

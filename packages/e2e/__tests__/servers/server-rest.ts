@@ -26,14 +26,14 @@ const convertUrlToToken = (url: string): string => {
 };
 
 export class ServerRestTest implements ServerTestInterface {
-  public port = 3000;
+  public port = 0; // use ephemeral free port
 
   public accountsServer: AccountsServer;
   public accountsPassword: AccountsPassword;
   public accountsDatabase: DatabaseInterface;
 
-  public accountsClient: AccountsClient;
-  public accountsClientPassword: AccountsClientPassword;
+  public accountsClient!: AccountsClient;
+  public accountsClientPassword!: AccountsClientPassword;
 
   public emails: any[];
 
@@ -90,12 +90,6 @@ export class ServerRestTest implements ServerTestInterface {
     this.app.use(bodyParser.urlencoded({ extended: true }));
     this.app.use(accountsExpress(this.accountsServer));
 
-    const accountsRest = new RestClient({
-      apiHost: `http://localhost:${this.port}`,
-      rootPath: '/accounts',
-    });
-    this.accountsClient = new AccountsClient({}, accountsRest);
-    this.accountsClientPassword = new AccountsClientPassword(this.accountsClient);
     this.emails = [];
   }
 
@@ -103,13 +97,25 @@ export class ServerRestTest implements ServerTestInterface {
     await new Promise((resolve) => setTimeout(resolve, 3000));
     await new Promise<void>((resolve, reject) => {
       this.server = this.app
+        // port 0 selects a free ephemeral port
         .listen(this.port, () => {
+          const address = this.server!.address();
+          if (typeof address === 'object' && address && 'port' in address) {
+            this.port = address.port as number;
+          }
           resolve();
         })
         .on('error', (err) => {
           reject(err);
         });
     });
+    // Initialize client after server is listening so we know the real port
+    const accountsRest = new RestClient({
+      apiHost: `http://localhost:${this.port}`,
+      rootPath: '/accounts',
+    });
+    this.accountsClient = new AccountsClient({}, accountsRest);
+    this.accountsClientPassword = new AccountsClientPassword(this.accountsClient);
     await this.databaseTest.start();
   }
 

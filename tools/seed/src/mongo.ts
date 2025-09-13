@@ -5,6 +5,8 @@ import { AccountsServer } from '@accounts/server';
 import { AccountsPassword } from '@accounts/password';
 import { Mongo } from '@accounts/mongo';
 import type { User } from '@accounts/types';
+import fs from 'node:fs';
+import path from 'node:path';
 
 const MONGO_URL = process.env.MONGO_URL || 'mongodb://localhost:27017/accounts-js-seed';
 const DEMO_EMAIL = process.env.DEMO_EMAIL || 'demo@example.com';
@@ -20,11 +22,60 @@ async function main() {
   const useMemory = process.env.MONGO_INMEMORY === '1';
   let mongoServer: MongoMemoryServer | undefined;
   if (useMemory) {
+    // Explicitly requested in-memory Mongo
     mongoServer = await MongoMemoryServer.create();
-    await mongoose.connect(mongoServer.getUri());
+    const uri = mongoServer.getUri();
+    await mongoose.connect(uri);
+    try {
+      const repoRoot = path.resolve(__dirname, '../../../');
+      const tmpDir = path.join(repoRoot, '.tmp');
+      const marker = {
+        mode: 'in-memory',
+        uri,
+        email: DEMO_EMAIL,
+        password: DEMO_PASSWORD,
+        at: new Date().toISOString(),
+      };
+      fs.mkdirSync(tmpDir, { recursive: true });
+      fs.writeFileSync(path.join(tmpDir, 'seed-inmemory.json'), JSON.stringify(marker, null, 2));
+    } catch {}
   } else {
-    await mongoose.connect(MONGO_URL);
+    // Try the configured/local Mongo first with a short timeout, then fall back to in-memory
+    try {
+      console.log(`[seed] Trying Mongo at ${MONGO_URL} ...`);
+      await mongoose.connect(MONGO_URL, { serverSelectionTimeoutMS: 2000 } as any);
+      console.log('[seed] Connected to Mongo successfully');
+    } catch (err) {
+      console.warn(
+        `[seed] Could not connect to ${MONGO_URL}. Falling back to in-memory MongoDB.`,
+        (err as Error)?.message || err
+      );
+      mongoServer = await MongoMemoryServer.create();
+      const memUri = mongoServer.getUri();
+      console.log(`[seed] In-memory Mongo started at ${memUri}`);
+      await mongoose.connect(memUri);
+      try {
+        const repoRoot = path.resolve(__dirname, '../../../');
+        const tmpDir = path.join(repoRoot, '.tmp');
+        const marker = {
+          mode: 'in-memory',
+          uri: memUri,
+          email: DEMO_EMAIL,
+          password: DEMO_PASSWORD,
+          at: new Date().toISOString(),
+        };
+        fs.mkdirSync(tmpDir, { recursive: true });
+        fs.writeFileSync(path.join(tmpDir, 'seed-inmemory.json'), JSON.stringify(marker, null, 2));
+      } catch {}
+    }
   }
+  // If connected to a real Mongo URL, remove any prior in-memory seed marker
+  try {
+    const repoRoot = path.resolve(__dirname, '../../../');
+    const tmpDir = path.join(repoRoot, '.tmp');
+    const markerPath = path.join(tmpDir, 'seed-inmemory.json');
+    if (!mongoServer && fs.existsSync(markerPath)) fs.unlinkSync(markerPath);
+  } catch {}
 
   const db = mongoose.connection;
   const accountsDb = new Mongo(db);

@@ -86,7 +86,14 @@ function whichDocker() {
     const procs = [];
     const env = { ...process.env };
     if (!useDocker) {
+      // No containers: use in-memory DB for server
       env.MONGO_INMEMORY = '1';
+    } else {
+      // Containers up: point server to the same DB name the seed uses by default
+      // so `yarn seed:mongo` -> `yarn dev` shares the same database.
+      if (!env.MONGO_URL) {
+        env.MONGO_URL = 'mongodb://localhost:27017/accounts-js-seed';
+      }
     }
 
     const serverCmd =

@@ -6,6 +6,8 @@
 */
 
 const { spawn } = require('child_process');
+const fs = require('fs');
+const path = require('path');
 
 function run(cmd, args, opts = {}) {
   return new Promise((resolve, reject) => {
@@ -18,6 +20,16 @@ function run(cmd, args, opts = {}) {
 }
 
 async function main() {
+  // Ensure a local tmp directory to avoid ENOSPC in system temp
+  const repoRoot = path.resolve(__dirname, '..');
+  const localTmp = path.join(repoRoot, '.tmp');
+  try {
+    fs.mkdirSync(localTmp, { recursive: true });
+  } catch (_) {}
+  process.env.TMPDIR = process.env.TMPDIR || localTmp;
+  process.env.TMP = process.env.TMP || localTmp;
+  process.env.TEMP = process.env.TEMP || localTmp;
+
   let dockerAvailable = true;
   console.log('Starting local databases with docker compose...');
   try {

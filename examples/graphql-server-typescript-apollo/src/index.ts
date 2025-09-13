@@ -28,7 +28,8 @@ void (async () => {
     await mongoose.connect(uri);
     console.log(`Using in-memory MongoDB at ${uri}`);
   } else {
-    await mongoose.connect('mongodb://localhost:27017/accounts-js-graphql-example');
+    const url = process.env.MONGO_URL || 'mongodb://localhost:27017/accounts-js-graphql-example';
+    await mongoose.connect(url);
   }
   const dbConn = mongoose.connection;
 
